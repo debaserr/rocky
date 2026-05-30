@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000/api/healthz)",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"next-server\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(npx shadcn@latest init -d)",
+      "Bash(curl -sv http://localhost:3000/api/healthz)",
+      "Bash(node *)",
+      "Bash(npx drizzle-kit *)",
+      "Bash(npm test *)",
+      "Bash(npx next *)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s -L http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/ -v)",
+      "Bash(grep -E '\\\\.\\(ts|tsx|js|jsx\\)$')"
+    ],
+    "deny": [
+      "Read(./app/.env)",
+      "Read(./app/.env.local)"
+    ]
+  }
+}

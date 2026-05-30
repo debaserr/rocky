@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1779615864628,
+      "tag": "0000_chunky_callisto",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779617672201,
+      "tag": "0001_outstanding_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784886264628,
+      "tag": "0002_settings_progression_count",
+      "breakpoints": true
+    }
+  ]
+}

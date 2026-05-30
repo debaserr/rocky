@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rocky — BWF Primer workout coach</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0A0B0B; }
+  body { font-family: "Space Grotesk", system-ui, sans-serif; color: #ECEFEE; -webkit-font-smoothing: antialiased; }
+  #root { height: 100%; }
+  button { font-family: inherit; }
+  /* hide all scrollbars inside artboards */
+  .design-canvas *::-webkit-scrollbar { display: none; }
+  .design-canvas * { scrollbar-width: none; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="rocky-theme.jsx"></script>
+<script type="text/babel" src="rocky-ui.jsx"></script>
+<script type="text/babel" src="rocky-screens.jsx"></script>
+<script type="text/babel" src="rocky-screens-2.jsx"></script>
+<script type="text/babel" src="rocky-prototype.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "lime",
+  "fontKey": "athletic",
+  "density": "comfortable",
+  "restTimerVariant": "ring"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  // re-apply theme on every tweak change
+  React.useEffect(() => {
+    applyRockyTheme({ accent: t.accent, fontKey: t.fontKey, density: t.density });
+  }, [t.accent, t.fontKey, t.density]);
+
+  return (
+    <React.Fragment>
+      <DesignCanvas minScale={0.15} maxScale={3}>
+
+        <DCSection id="prototype" title="Live prototype" subtitle="Click anywhere — tap Start session and walk through a full session. Rest timer ticks down in real time.">
+          <DCArtboard id="phone-live" label="Phone · interactive" width={390} height={844}>
+            <RockyPrototype
+              homeVariant={t.homeVariant || 'cta'}
+              restTimerVariant={t.restTimerVariant}
+              sessionCompleteVariant={t.sessionCompleteVariant || 'list'}
+              initialScreen="home" />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="screens" title="All 9 screens" subtitle="The full flow as static states. Drag-reorder, focus any one (↗) for a closer look.">
+          <DCArtboard id="01-login" label="01 · Login" width={390} height={844}>
+            <ScreenLogin email="" submitted={false} />
+          </DCArtboard>
+          <DCArtboard id="01b-login-sent" label="01b · Magic link sent" width={390} height={844}>
+            <ScreenLogin email="alex@rocky.gym" submitted={true} />
+          </DCArtboard>
+          <DCArtboard id="02-home" label="02 · Home" width={390} height={844}>
+            <ScreenHome variant="cta" exercises={ROCKY_BWF_PRIMER} />
+          </DCArtboard>
+          <DCArtboard id="03-intro" label="03 · Exercise intro" width={390} height={844}>
+            <ScreenExerciseIntro ex={ROCKY_BWF_PRIMER[2]} exerciseIndex={2} totalExercises={6} />
+          </DCArtboard>
+          <DCArtboard id="04-active" label="04 · Set active" width={390} height={844}>
+            <SetActiveDemo />
+          </DCArtboard>
+          <DCArtboard id="05-rest" label="05 · Rest timer" width={390} height={844}>
+            <ScreenRestTimer ex={ROCKY_BWF_PRIMER[2]} exerciseIndex={2} totalExercises={6} nextSetNumber={3} totalSets={3} secondsLeft={64} totalSeconds={90} variant={t.restTimerVariant} />
+          </DCArtboard>
+          <DCArtboard id="06-levelup" label="06 · Level up" width={390} height={844}>
+            <ScreenLevelUp ex={ROCKY_BWF_PRIMER[2]} oldLevel="L2 · Pike" newLevel="L3 · Full" newTarget={6} />
+          </DCArtboard>
+          <DCArtboard id="07-complete" label="07 · Session complete" width={390} height={844}>
+            <ScreenSessionComplete variant={t.sessionCompleteVariant || 'list'} exercises={ROCKY_BWF_PRIMER} durationMin={24} levelUps={1} />
+          </DCArtboard>
+          <DCArtboard id="08-history" label="08 · History" width={390} height={844}>
+            <ScreenHistory />
+          </DCArtboard>
+          <DCArtboard id="09-settings" label="09 · Progress / Settings" width={390} height={844}>
+            <ScreenSettings />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="home-variants" title="Home · variations" subtitle="Two answers to: 'what does the home screen lead with?'">
+          <DCArtboard id="home-cta" label="A · CTA-first" width={390} height={844}>
+            <ScreenHome variant="cta" exercises={ROCKY_BWF_PRIMER} />
+          </DCArtboard>
+          <DCArtboard id="home-progress" label="B · Progress-first" width={390} height={844}>
+            <ScreenHome variant="progress" exercises={ROCKY_BWF_PRIMER} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="rest-variants" title="Rest timer · variations" subtitle="Pick one with the Tweaks panel — applies to the live prototype above too.">
+          <DCArtboard id="rest-numeric" label="A · Numeric (hero)" width={390} height={844}>
+            <ScreenRestTimer ex={ROCKY_BWF_PRIMER[2]} exerciseIndex={2} totalExercises={6} nextSetNumber={3} totalSets={3} secondsLeft={64} totalSeconds={90} variant="numeric" />
+          </DCArtboard>
+          <DCArtboard id="rest-ring" label="B · Ring" width={390} height={844}>
+            <ScreenRestTimer ex={ROCKY_BWF_PRIMER[2]} exerciseIndex={2} totalExercises={6} nextSetNumber={3} totalSets={3} secondsLeft={64} totalSeconds={90} variant="ring" />
+          </DCArtboard>
+          <DCArtboard id="rest-bar" label="C · Bar" width={390} height={844}>
+            <ScreenRestTimer ex={ROCKY_BWF_PRIMER[2]} exerciseIndex={2} totalExercises={6} nextSetNumber={3} totalSets={3} secondsLeft={64} totalSeconds={90} variant="bar" />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="complete-variants" title="Session complete · variations" subtitle="Three takes on the end-of-session summary.">
+          <DCArtboard id="complete-list" label="A · List" width={390} height={844}>
+            <ScreenSessionComplete variant="list" exercises={ROCKY_BWF_PRIMER} durationMin={24} levelUps={1} />
+          </DCArtboard>
+          <DCArtboard id="complete-grid" label="B · Grid" width={390} height={844}>
+            <ScreenSessionComplete variant="grid" exercises={ROCKY_BWF_PRIMER} durationMin={24} levelUps={1} />
+          </DCArtboard>
+          <DCArtboard id="complete-receipt" label="C · Receipt" width={390} height={844}>
+            <ScreenSessionComplete variant="receipt" exercises={ROCKY_BWF_PRIMER} durationMin={24} levelUps={2} />
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection label="Theme" />
+        <TweakColor label="Accent" value={THEMES.accents[t.accent].hex}
+          options={Object.values(THEMES.accents).map((a) => a.hex)}
+          onChange={(hex) => {
+            const k = Object.keys(THEMES.accents).find((k) => THEMES.accents[k].hex === hex);
+            setTweak('accent', k || 'lime');
+          }} />
+        <TweakSelect label="Type" value={t.fontKey}
+          options={[
+            { value: 'athletic', label: 'Athletic · Space Grotesk + JetBrains Mono' },
+            { value: 'neutral',  label: 'Neutral · Inter Tight + IBM Plex Mono' },
+            { value: 'modern',   label: 'Modern · Sora + Geist Mono' },
+          ]}
+          onChange={(v) => setTweak('fontKey', v)} />
+        <TweakRadio label="Density" value={t.density}
+          options={['compact', 'comfortable']}
+          onChange={(v) => setTweak('density', v)} />
+
+        <TweakSection label="Variations" />
+        <TweakRadio label="Home" value={t.homeVariant || 'cta'}
+          options={[{ value: 'cta', label: 'CTA-first' }, { value: 'progress', label: 'Progress' }]}
+          onChange={(v) => setTweak('homeVariant', v)} />
+        <TweakSelect label="Rest timer" value={t.restTimerVariant}
+          options={[
+            { value: 'numeric', label: 'Numeric (hero)' },
+            { value: 'ring',    label: 'Ring' },
+            { value: 'bar',     label: 'Bar' },
+          ]}
+          onChange={(v) => setTweak('restTimerVariant', v)} />
+        <TweakSelect label="Session complete" value={t.sessionCompleteVariant || 'list'}
+          options={[
+            { value: 'list',    label: 'List' },
+            { value: 'grid',    label: 'Grid' },
+            { value: 'receipt', label: 'Receipt' },
+          ]}
+          onChange={(v) => setTweak('sessionCompleteVariant', v)} />
+      </TweaksPanel>
+    </React.Fragment>
+  );
+}
+
+// Static demo of the rep counter (used in the static screen tile)
+function SetActiveDemo() {
+  const [reps, setReps] = React.useState(6);
+  return <ScreenSetActive
+    ex={ROCKY_BWF_PRIMER[2]} exerciseIndex={2} totalExercises={6}
+    setNumber={2} totalSets={3}
+    reps={reps} setReps={setReps} />;
+}
+
+// initial theme application before first render
+applyRockyTheme({ accent: TWEAK_DEFAULTS.accent, fontKey: TWEAK_DEFAULTS.fontKey, density: TWEAK_DEFAULTS.density });
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
