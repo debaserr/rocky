@@ -37,7 +37,6 @@ test('resting screen shows SVG ring timer after logging set 1', async ({ page })
   await page.goto('/session');
   await page.getByRole('button', { name: /start set 1/i }).click();
   await page.getByRole('button', { name: /done.*log set/i }).click();
-  await page.getByRole('button', { name: /done.*log set/i }).click();
 
   await expect(page.getByTestId('rest-ring')).toBeVisible({ timeout: 5000 });
 });
@@ -52,7 +51,6 @@ test('timer auto-advances after rest_seconds with beep (clock fast-forward)', as
   await page.clock.install();
   await page.goto('/session');
   await page.getByRole('button', { name: /start set 1/i }).click();
-  await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByRole('button', { name: /done.*log set/i }).click();
 
   await expect(page.getByTestId('rest-ring')).toBeVisible({ timeout: 5000 });
@@ -76,7 +74,6 @@ test('skip advances to set_active immediately without beep', async ({ browser })
 
   await page.goto('/session');
   await page.getByRole('button', { name: /start set 1/i }).click();
-  await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByRole('button', { name: /done.*log set/i }).click();
 
   await expect(page.getByTestId('rest-ring')).toBeVisible({ timeout: 5000 });
@@ -111,7 +108,6 @@ test('wake lock stays held after timer fires', async ({ browser }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /start session/i }).click();
   await page.getByRole('button', { name: /start set 1/i }).click();
-  await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByRole('button', { name: /done.*log set/i }).click();
 
   await expect(page.getByTestId('rest-ring')).toBeVisible({ timeout: 5000 });

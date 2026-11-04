@@ -1,16 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { completeThreeSets } from './session-helpers';
 
 // All tests modify the same test-user DB row — run serially to avoid races.
 test.describe.configure({ mode: 'serial' });
-
-async function completeThreeSets(page: import('@playwright/test').Page) {
-  for (let set = 1; set <= 3; set++) {
-    await expect(page.getByTestId('set-counter')).toContainText(`Set ${set} of 3`, { timeout: 5000 });
-    await page.getByRole('button', { name: /done.*log set/i }).click();
-    await page.getByRole('button', { name: /done.*log set/i }).click();
-    await page.getByTestId('skip-rest').click();
-  }
-}
 
 async function setDeadbugsReps(page: import('@playwright/test').Page, currentReps: number, progressionLevel = 1) {
   const res = await page.request.get('/api/progress');
@@ -93,8 +85,8 @@ test('Continue button on level-up screen advances to next exercise', async ({ br
 });
 
 // ── Behavior 4 ─────────────────────────────────────────────────
-// When no level-up occurs, the encouragement card is shown
-test('encouragement card shown when no level-up', async ({ browser }) => {
+// When no level-up occurs mid-workout, go straight to the next exercise (no encouragement card)
+test('no level-up advances straight to next exercise', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     storageState: 'playwright/.auth/user.json',
@@ -109,56 +101,45 @@ test('encouragement card shown when no level-up', async ({ browser }) => {
   await page.getByRole('button', { name: /start set 1/i }).click();
   await completeThreeSets(page);
 
-  await expect(page.getByTestId('encouragement-card')).toBeVisible({ timeout: 8000 });
+  await expect(page.getByRole('heading', { name: /bird dog/i })).toBeVisible({ timeout: 8000 });
+  await expect(page.getByTestId('encouragement-card')).toHaveCount(0);
 
   await context.close();
 });
 
 // ── Behavior 5 ─────────────────────────────────────────────────
-// Tapping the encouragement card advances immediately
-test('encouragement card advances immediately on tap', async ({ browser }) => {
+// The encouragement card appears once, after the final exercise, then auto-advances
+test('encouragement card shown only at end of workout and auto-advances', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     storageState: 'playwright/.auth/user.json',
   });
   const page = await context.newPage();
 
-  await setDeadbugsReps(page, 6, 1);
-
-  await page.goto('/session');
-  await page.getByRole('button', { name: /start set 1/i }).click();
-  await completeThreeSets(page);
-
-  await expect(page.getByTestId('encouragement-card')).toBeVisible({ timeout: 8000 });
-  await page.getByTestId('encouragement-card').click();
-
-  await expect(page.getByRole('heading', { name: /bird dog/i })).toBeVisible({ timeout: 5000 });
-
-  await context.close();
-});
-
-// ── Behavior 6 ─────────────────────────────────────────────────
-// Encouragement card auto-advances after 2 seconds
-test('encouragement card auto-advances after 2 seconds', async ({ browser }) => {
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    storageState: 'playwright/.auth/user.json',
-  });
-  const page = await context.newPage();
+  // Put every exercise at rangeMin so nothing levels up
+  const res = await page.request.get('/api/progress');
+  const progress: { exerciseId: number; rangeMin: number }[] = await res.json();
+  for (const p of progress) {
+    await page.request.patch(`/api/progress/${p.exerciseId}`, {
+      data: { currentReps: p.rangeMin, progressionLevel: 1 },
+    });
+  }
 
   await page.clock.install();
-
-  await setDeadbugsReps(page, 6, 1);
-
   await page.goto('/session');
-  await page.getByRole('button', { name: /start set 1/i }).click();
-  await completeThreeSets(page);
+
+  for (let ex = 0; ex < progress.length; ex++) {
+    await page.getByRole('button', { name: /start set 1/i }).click();
+    await completeThreeSets(page);
+    if (ex < progress.length - 1) {
+      await expect(page.getByRole('button', { name: /start set 1/i })).toBeVisible({ timeout: 8000 });
+      await expect(page.getByTestId('encouragement-card')).toHaveCount(0);
+    }
+  }
 
   await expect(page.getByTestId('encouragement-card')).toBeVisible({ timeout: 8000 });
-
   await page.clock.fastForward(2100);
-
-  await expect(page.getByRole('heading', { name: /bird dog/i })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('session-complete-screen')).toBeVisible({ timeout: 5000 });
 
   await context.close();
 });

@@ -4,7 +4,6 @@ export type SessionPhase =
   | 'idle'
   | 'exercise_intro'
   | 'set_active'
-  | 'logging_reps'
   | 'resting'
   | 'evaluating'
   | 'feedback'
@@ -34,7 +33,6 @@ export type SessionState = {
 export type SessionAction =
   | { type: 'START'; sessionId: number; exercises: ExerciseProgress[] }
   | { type: 'START_SET' }
-  | { type: 'DONE_SET' }
   | { type: 'SET_REPS'; reps: number }
   | { type: 'LOG_SET' }
   | { type: 'SKIP_REST' }
@@ -56,6 +54,24 @@ export const INITIAL_SESSION_STATE: SessionState = {
   exerciseResults: [],
   levelUpCount: 0,
 };
+
+export const SETS_PER_EXERCISE = 3;
+
+function advanceToNextExercise(state: SessionState): SessionState {
+  const nextIndex = state.exerciseIndex + 1;
+  if (nextIndex >= state.exercises.length) {
+    return { ...state, phase: 'session_complete' };
+  }
+  const nextEx = state.exercises[nextIndex];
+  return {
+    ...state,
+    phase: 'exercise_intro',
+    exerciseIndex: nextIndex,
+    setNumber: 1,
+    setResults: [],
+    reps: nextEx ? nextEx.currentReps + 1 : 0,
+  };
+}
 
 export function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
@@ -79,9 +95,6 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case 'START_SET':
       return { ...state, phase: 'set_active' };
 
-    case 'DONE_SET':
-      return { ...state, phase: 'logging_reps' };
-
     case 'SET_REPS': {
       const ex = state.exercises[state.exerciseIndex];
       const clamped = Math.max(0, Math.min(ex?.rangeMax ?? Infinity, action.reps));
@@ -89,14 +102,15 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     }
 
     case 'LOG_SET':
+      // Rest only happens between sets — after the final set, go straight to evaluation.
       return {
         ...state,
-        phase: 'resting',
+        phase: state.setNumber < SETS_PER_EXERCISE ? 'resting' : 'evaluating',
         setResults: [...state.setResults, state.reps],
       };
 
     case 'SKIP_REST': {
-      if (state.setNumber < 3) {
+      if (state.setNumber < SETS_PER_EXERCISE) {
         const ex = state.exercises[state.exerciseIndex];
         return {
           ...state,
@@ -120,34 +134,27 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         ...state.exerciseResults,
         { exerciseId: currentEx?.exerciseId ?? 0, sets: [...state.setResults] },
       ];
-      return {
+      const evaluated: SessionState = {
         ...state,
         exercises: updatedExercises,
         doneExerciseIndices,
         exerciseResults,
         levelUpCount: state.levelUpCount + (action.leveledUp ? 1 : 0),
-        phase: 'feedback',
         lastLeveledUp: action.leveledUp,
         lastNewLevel: action.newLevel,
         lastNewReps: action.newReps,
       };
+      // Feedback is shown for a level-up, or as end-of-workout encouragement
+      // after the last exercise. Otherwise move straight on to the next exercise.
+      const isLastExercise = state.exerciseIndex + 1 >= state.exercises.length;
+      if (action.leveledUp || isLastExercise) {
+        return { ...evaluated, phase: 'feedback' };
+      }
+      return advanceToNextExercise(evaluated);
     }
 
-    case 'FEEDBACK_DONE': {
-      const nextIndex = state.exerciseIndex + 1;
-      if (nextIndex >= state.exercises.length) {
-        return { ...state, phase: 'session_complete' };
-      }
-      const nextEx = state.exercises[nextIndex];
-      return {
-        ...state,
-        phase: 'exercise_intro',
-        exerciseIndex: nextIndex,
-        setNumber: 1,
-        setResults: [],
-        reps: nextEx ? nextEx.currentReps + 1 : 0,
-      };
-    }
+    case 'FEEDBACK_DONE':
+      return advanceToNextExercise(state);
 
     default:
       return state;
