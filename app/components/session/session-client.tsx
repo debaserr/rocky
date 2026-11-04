@@ -23,6 +23,7 @@ export function SessionClient({ userId, exercises }: Props) {
   const router = useRouter();
   const [state, dispatch] = useReducer(sessionReducer, INITIAL_SESSION_STATE);
   const prevPhaseRef = useRef(state.phase);
+  const loggingRef = useRef(false);
 
   // Start session on mount
   useEffect(() => {
@@ -95,10 +96,16 @@ export function SessionClient({ userId, exercises }: Props) {
   const goal = currentExercise ? currentExercise.currentReps + 1 : 0;
 
   const handleLogSet = async () => {
-    if (state.sessionId && currentExercise) {
-      await logSetAction(state.sessionId, currentExercise.exerciseId, state.setNumber, state.reps);
+    if (loggingRef.current) return;
+    loggingRef.current = true;
+    try {
+      if (state.sessionId && currentExercise) {
+        await logSetAction(state.sessionId, currentExercise.exerciseId, state.setNumber, state.reps);
+      }
+      dispatch({ type: 'LOG_SET' });
+    } finally {
+      loggingRef.current = false;
     }
-    dispatch({ type: 'LOG_SET' });
   };
 
   if (state.phase === 'idle') {
@@ -144,10 +151,7 @@ export function SessionClient({ userId, exercises }: Props) {
       );
     }
     return (
-      <EncouragementCard
-        exerciseIndex={state.exerciseIndex}
-        onContinue={handleFeedbackDone}
-      />
+      <EncouragementCard onContinue={handleFeedbackDone} />
     );
   }
 
@@ -166,23 +170,6 @@ export function SessionClient({ userId, exercises }: Props) {
   }
 
   if (state.phase === 'set_active') {
-    return (
-      <SetActiveScreen
-        exercise={currentExercise}
-        exerciseIndex={state.exerciseIndex}
-        totalExercises={state.exercises.length}
-        setNumber={state.setNumber}
-        goal={goal}
-        reps={state.reps}
-        doneExerciseIndices={state.doneExerciseIndices}
-        onSetReps={(reps) => dispatch({ type: 'SET_REPS', reps })}
-        onDone={() => dispatch({ type: 'DONE_SET' })}
-        onClose={() => router.push('/')}
-      />
-    );
-  }
-
-  if (state.phase === 'logging_reps') {
     return (
       <SetActiveScreen
         exercise={currentExercise}

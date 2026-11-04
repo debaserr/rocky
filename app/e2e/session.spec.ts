@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { completeThreeSets, advancePastFeedback } from './session-helpers';
 
 const EXERCISES = ['Deadbugs', 'Bird dog', 'Push-ups', 'Rows', 'Squats', 'Bridges'];
 
@@ -9,18 +10,6 @@ async function getProgress(page: import('@playwright/test').Page): Promise<Progr
   return res.json();
 }
 
-
-async function handleFeedbackScreen(page: import('@playwright/test').Page) {
-  await page.waitForSelector(
-    '[data-testid="encouragement-card"], [data-testid="level-up-screen"]',
-    { timeout: 5000 },
-  );
-  if (await page.getByTestId('encouragement-card').isVisible()) {
-    await page.getByTestId('encouragement-card').click();
-  } else {
-    await page.getByRole('button', { name: /continue/i }).click();
-  }
-}
 
 // ── Behavior 1 (tracer bullet) ─────────────────────────────────
 // "Start session" navigates to /session and shows exercise intro for Deadbugs
@@ -84,7 +73,7 @@ test('TTS announce fires on exercise intro', async ({ page }) => {
 });
 
 // ── Behavior 4 ─────────────────────────────────────────────────
-// "Done — log set" advances to logging_reps; tapping again advances to resting
+// A single "Done — log set" tap logs the set and advances to resting
 // Skip rest advances set counter
 test('set counter increments from 1 to 2 to 3', async ({ browser }) => {
   const context = await browser.newContext({
@@ -96,15 +85,13 @@ test('set counter increments from 1 to 2 to 3', async ({ browser }) => {
   await page.goto('/session');
   await page.getByRole('button', { name: /start set 1/i }).click();
 
-  // Set 1: Done → logging_reps → Done → resting → skip → set_active set 2
+  // Set 1: Done → resting → skip → set_active set 2
   await expect(page.getByTestId('set-counter')).toContainText('Set 1 of 3');
-  await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByTestId('skip-rest').click();
 
   // Now on set 2
   await expect(page.getByTestId('set-counter')).toContainText('Set 2 of 3');
-  await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByRole('button', { name: /done.*log set/i }).click();
   await page.getByTestId('skip-rest').click();
 
@@ -134,19 +121,11 @@ test('happy path — all 6 exercises × 3 sets updates user_progress', async ({ 
     // Start set 1
     await page.getByRole('button', { name: /start set 1/i }).click();
 
-    // 3 sets per exercise
-    for (let set = 1; set <= 3; set++) {
-      await expect(page.getByTestId('set-counter')).toContainText(`Set ${set} of 3`, { timeout: 5000 });
-      // First Done tap: set_active → logging_reps
-      await page.getByRole('button', { name: /done.*log set/i }).click();
-      // Second Done tap: logging_reps → resting
-      await page.getByRole('button', { name: /done.*log set/i }).click();
-      // Skip rest
-      await page.getByTestId('skip-rest').click();
-    }
+    // 3 sets per exercise (no rest after the last one)
+    await completeThreeSets(page);
 
-    // After the 3rd set: evaluating → feedback screen → advance
-    await handleFeedbackScreen(page);
+    // Level-up / end-of-workout feedback, if any
+    await advancePastFeedback(page);
   }
 
   // Verify full session flow reached session_complete

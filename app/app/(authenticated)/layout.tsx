@@ -13,6 +13,7 @@ export default async function AuthenticatedLayout({
   return (
     <div
       style={{
+        width: '100%',
         maxWidth: 390,
         margin: '0 auto',
         minHeight: '100dvh',

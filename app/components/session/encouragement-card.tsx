@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { RKCard } from '@/components/ui/rk-card';
 import { RKLabel } from '@/components/ui/rk-label';
 
@@ -11,17 +11,17 @@ const MESSAGES = [
 ];
 
 type Props = {
-  exerciseIndex: number;
   onContinue: () => void;
 };
 
-export function EncouragementCard({ exerciseIndex, onContinue }: Props) {
-  const message = MESSAGES[exerciseIndex % MESSAGES.length];
+// Shown once, at the end of the workout.
+export function EncouragementCard({ onContinue }: Props) {
+  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
 
   useEffect(() => {
     const id = setTimeout(onContinue, 2000);
     return () => clearTimeout(id);
-  // onContinue identity is stable (dispatch); exerciseIndex guards remount
+  // onContinue identity is stable (dispatch)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -32,7 +32,7 @@ export function EncouragementCard({ exerciseIndex, onContinue }: Props) {
         onClick={onContinue}
         padding={24}
       >
-        <RKLabel>Keep going</RKLabel>
+        <RKLabel>Workout done</RKLabel>
         <p style={{
           margin: '12px 0 0', fontSize: 22, fontWeight: 500,
           lineHeight: 1.3, letterSpacing: -0.4,

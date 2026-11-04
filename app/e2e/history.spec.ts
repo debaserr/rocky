@@ -1,18 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { completeThreeSets, advancePastFeedback } from './session-helpers';
 
 const EXERCISES = ['Deadbugs', 'Bird dog', 'Push-ups', 'Rows', 'Squats', 'Bridges'];
-
-async function handleFeedbackScreen(page: import('@playwright/test').Page) {
-  await page.waitForSelector(
-    '[data-testid="encouragement-card"], [data-testid="level-up-screen"]',
-    { timeout: 5000 },
-  );
-  if (await page.getByTestId('encouragement-card').isVisible()) {
-    await page.getByTestId('encouragement-card').click();
-  } else {
-    await page.getByRole('button', { name: /continue/i }).click();
-  }
-}
 
 async function completeFullSession(page: import('@playwright/test').Page) {
   await page.goto('/session');
@@ -24,16 +13,8 @@ async function completeFullSession(page: import('@playwright/test').Page) {
 
     await page.getByRole('button', { name: /start set 1/i }).click();
 
-    for (let set = 1; set <= 3; set++) {
-      await expect(page.getByTestId('set-counter')).toContainText(`Set ${set} of 3`, {
-        timeout: 5000,
-      });
-      await page.getByRole('button', { name: /done.*log set/i }).click();
-      await page.getByRole('button', { name: /done.*log set/i }).click();
-      await page.getByTestId('skip-rest').click();
-    }
-
-    await handleFeedbackScreen(page);
+    await completeThreeSets(page);
+    await advancePastFeedback(page);
   }
 }
 
